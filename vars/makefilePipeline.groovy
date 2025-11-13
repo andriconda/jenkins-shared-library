@@ -15,11 +15,18 @@ def call(Map config = [:]) {
     def gitUrl = config.gitUrl ?: error("gitUrl is required")
     def gitBranch = config.gitBranch ?: 'main'
     
+    // Optional: Maven tool configuration
+    def mavenTool = config.mavenTool ?: 'Maven'
+    
     // Shared library workspace path
     def sharedLibPath = "${env.WORKSPACE}@libs/jenkins-shared-library"
     
     pipeline {
         agent any
+        
+        tools {
+            maven "${mavenTool}"
+        }
         
         stages {
             stage('Setup') {

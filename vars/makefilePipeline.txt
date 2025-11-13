@@ -1,0 +1,65 @@
+Makefile-Based Pipeline
+
+Pure Makefile approach where platform engineers control mandatory stages
+via Makefiles in the shared library, and app engineers can only add
+before/after hooks.
+
+Usage:
+------
+@Library('jenkins-shared-library') _
+
+makefilePipeline(
+    gitUrl: 'https://github.com/your-org/your-repo.git',
+    gitBranch: 'main',
+    mavenTool: 'Maven'
+)
+
+Parameters:
+-----------
+- gitUrl: Git repository URL (required)
+- gitBranch: Git branch to checkout (default: 'main')
+- mavenTool: Name of Maven tool in Jenkins (default: 'Maven')
+
+Mandatory Stages (Platform Controlled):
+----------------------------------------
+These stages run from shared library Makefiles.
+App engineers CANNOT modify these.
+
+1. Build       - jenkins-shared-library/stages/build/Makefile
+2. Test        - jenkins-shared-library/stages/test/Makefile
+3. Security    - jenkins-shared-library/stages/security/Makefile
+4. Package     - jenkins-shared-library/stages/package/Makefile
+
+Optional Hooks (App Controlled):
+---------------------------------
+App engineers can add these in their repo's Makefile:
+
+- before-build, after-build
+- before-test, after-test
+- before-security, after-security
+- before-package, after-package
+
+Example App Makefile:
+---------------------
+.PHONY: before-build after-build
+
+before-build:
+	@echo "Validating environment..."
+	@java -version
+
+after-build:
+	@echo "Build completed!"
+	@ls -lh target/
+
+Supported Project Types:
+-------------------------
+The platform Makefiles support:
+- Maven (pom.xml)
+- Gradle (build.gradle)
+- Node.js (package.json)
+
+Platform Updates:
+-----------------
+To update a mandatory stage, platform engineers edit the
+corresponding Makefile in jenkins-shared-library/stages/
+and all apps automatically get the update.
