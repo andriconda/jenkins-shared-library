@@ -1,0 +1,87 @@
+Container-Based Pipeline
+
+NO TOOLS REQUIRED ON JENKINS!
+Everything runs in standard Docker containers.
+
+Usage:
+------
+@Library('jenkins-shared-library') _
+
+containerPipeline(
+    gitUrl: 'https://github.com/your-org/your-repo.git',
+    gitBranch: 'main'
+)
+
+Parameters:
+-----------
+- gitUrl: Git repository URL (required)
+- gitBranch: Git branch to checkout (default: 'main')
+- buildImage: Container image for build stage (default: 'maven:3.9-eclipse-temurin-17')
+- testImage: Container image for test stage (default: 'maven:3.9-eclipse-temurin-17')
+- securityImage: Container image for security stage (default: 'maven:3.9-eclipse-temurin-17')
+- packageImage: Container image for package stage (default: 'maven:3.9-eclipse-temurin-17')
+- dockerImage: Container image for docker build (default: 'docker:24-cli')
+- mavenCache: Docker volume for Maven cache (default: 'maven-repo')
+
+Mandatory Stages (Platform Controlled):
+----------------------------------------
+All stages run in containers - NO tools needed on Jenkins!
+
+1. Build       - Runs in buildImage container
+2. Test        - Runs in testImage container
+3. Security    - Runs in securityImage container
+4. Package     - Runs in packageImage container
+5. Docker      - Runs in dockerImage container (if Dockerfile exists)
+
+Optional Hooks (App Controlled):
+---------------------------------
+App engineers define hooks in pipeline-hooks.sh:
+
+- before_build(), after_build()
+- before_test(), after_test()
+- before_security(), after_security()
+- before_package(), after_package()
+
+Example pipeline-hooks.sh:
+---------------------------
+#!/bin/bash
+
+before_build() {
+    echo "Validating environment..."
+    java -version
+}
+
+after_build() {
+    echo "Build completed!"
+    ls -lh target/
+}
+
+Benefits:
+---------
+✅ No Maven, Java, or Make needed on Jenkins
+✅ Only Docker required
+✅ Consistent build environment
+✅ Easy to update (change container image)
+✅ Works on any Jenkins with Docker
+✅ Isolated builds (no tool conflicts)
+
+Supported Project Types:
+-------------------------
+- Maven (pom.xml)
+- Gradle (build.gradle)
+- Node.js (package.json)
+
+Jenkins Requirements:
+---------------------
+- Docker installed on Jenkins
+- Docker socket accessible (/var/run/docker.sock)
+- That's it!
+
+Custom Container Images:
+------------------------
+containerPipeline(
+    gitUrl: 'https://github.com/your-org/your-repo.git',
+    buildImage: 'maven:3.9-eclipse-temurin-21',  // Java 21
+    testImage: 'gradle:8-jdk17',                  // Gradle
+    dockerImage: 'docker:25-cli'                  // Latest Docker
+)
