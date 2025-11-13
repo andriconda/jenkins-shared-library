@@ -8,12 +8,17 @@ run:
 	@echo "=== Platform Security Scan Stage ==="
 	@echo "Running security scans..."
 	@if [ -f "pom.xml" ]; then \
-		mvn dependency-check:check || echo "Warning: Security scan had issues"; \
-		mvn dependency:tree > dependency-tree.txt; \
+		echo "Generating dependency tree..."; \
+		mvn dependency:tree > dependency-tree.txt || true; \
+		echo "Note: dependency-check plugin not configured - skipping vulnerability scan"; \
+		echo "To enable: Add org.owasp:dependency-check-maven plugin to pom.xml"; \
 	elif [ -f "build.gradle" ]; then \
-		./gradlew dependencyCheckAnalyze || echo "Warning: Security scan had issues"; \
+		echo "Gradle security scan..."; \
+		./gradlew dependencies || true; \
+		echo "Note: Configure OWASP dependency-check plugin for vulnerability scanning"; \
 	elif [ -f "package.json" ]; then \
-		npm audit || echo "Warning: Security scan had issues"; \
+		echo "Running npm audit..."; \
+		npm audit --audit-level=moderate || echo "npm audit found issues (non-blocking)"; \
 	else \
 		echo "Warning: No security scan available for this project type"; \
 	fi

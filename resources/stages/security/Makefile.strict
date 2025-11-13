@@ -1,0 +1,37 @@
+# Platform Security Scan Stage (STRICT MODE)
+# This is controlled by platform engineers
+# App engineers CANNOT modify this
+# FAILS if security scan plugin is not configured
+
+.PHONY: run
+
+run:
+	@echo "=== Platform Security Scan Stage (STRICT) ==="
+	@echo "Running security scans..."
+	@if [ -f "pom.xml" ]; then \
+		echo "Checking for OWASP dependency-check plugin..."; \
+		if grep -q "dependency-check-maven" pom.xml; then \
+			echo "Running dependency-check..."; \
+			mvn dependency-check:check; \
+		else \
+			echo "ERROR: OWASP dependency-check-maven plugin not found in pom.xml"; \
+			echo "Add this plugin to your pom.xml:"; \
+			echo "<plugin>"; \
+			echo "  <groupId>org.owasp</groupId>"; \
+			echo "  <artifactId>dependency-check-maven</artifactId>"; \
+			echo "  <version>8.4.0</version>"; \
+			echo "</plugin>"; \
+			exit 1; \
+		fi; \
+		mvn dependency:tree > dependency-tree.txt; \
+	elif [ -f "build.gradle" ]; then \
+		echo "Running Gradle security scan..."; \
+		./gradlew dependencyCheckAnalyze; \
+	elif [ -f "package.json" ]; then \
+		echo "Running npm audit..."; \
+		npm audit --audit-level=high; \
+	else \
+		echo "ERROR: No build file found"; \
+		exit 1; \
+	fi
+	@echo "Security scan completed successfully"
