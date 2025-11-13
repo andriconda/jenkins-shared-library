@@ -6,7 +6,7 @@
  * MANDATORY STAGES: Use Makefiles from shared library repo (platform controlled)
  * OPTIONAL HOOKS: Use Makefiles from app repo (before-* and after-* targets)
  * 
- * Platform engineers control: stages/*/Makefile in shared library
+ * Platform engineers control: Makefile in shared library
  * App engineers control: before-build, after-build, etc. in app repo Makefile
  */
 
