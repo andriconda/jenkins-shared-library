@@ -84,12 +84,8 @@ def createCustomStages(String afterStage, Map customStages, String defaultImage,
     def stages = [:]
     customStages.findAll { it.value.after == afterStage }.each { stageName, stageConfig ->
         stages[stageName] = {
-            node {
-                stage(stageName) {
-                    echo "=== Custom Stage: ${stageName} (App) ==="
-                    runCustomStage(stageName, stageConfig, defaultImage, cacheVolume)
-                }
-            }
+            echo "=== Custom Stage: ${stageName} (App) ==="
+            runCustomStage(stageName, stageConfig, defaultImage, cacheVolume)
         }
     }
     return stages
