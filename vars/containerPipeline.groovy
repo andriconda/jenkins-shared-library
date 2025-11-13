@@ -157,7 +157,8 @@ def call(Map config = [:]) {
                 steps {
                     script {
                         def buildCustomStages = createCustomStages('build', customStages, PLATFORM_BUILD_IMAGE, mavenCache)
-                        parallel(failFast: true, buildCustomStages)
+                        buildCustomStages['failFast'] = true
+                        parallel buildCustomStages
                     }
                 }
             }
@@ -178,7 +179,8 @@ def call(Map config = [:]) {
                 steps {
                     script {
                         def testCustomStages = createCustomStages('test', customStages, PLATFORM_TEST_IMAGE, mavenCache)
-                        parallel(failFast: true, testCustomStages)
+                        testCustomStages['failFast'] = true
+                        parallel testCustomStages
                     }
                 }
             }
@@ -199,7 +201,8 @@ def call(Map config = [:]) {
                 steps {
                     script {
                         def securityCustomStages = createCustomStages('security', customStages, PLATFORM_SECURITY_IMAGE, mavenCache)
-                        parallel(failFast: true, securityCustomStages)
+                        securityCustomStages['failFast'] = true
+                        parallel securityCustomStages
                     }
                 }
             }
@@ -220,7 +223,8 @@ def call(Map config = [:]) {
                 steps {
                     script {
                         def packageCustomStages = createCustomStages('package', customStages, PLATFORM_PACKAGE_IMAGE, mavenCache)
-                        parallel(failFast: true, packageCustomStages)
+                        packageCustomStages['failFast'] = true
+                        parallel packageCustomStages
                     }
                 }
             }
