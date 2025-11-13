@@ -10,6 +10,19 @@
  * App engineers control: before-build, after-build, etc. in app repo Makefile
  */
 
+// Helper to run platform stage
+def runPlatformStage(String stageName, String stageScript) {
+    writeFile file: ".platform-${stageName}.mk", text: """
+.PHONY: run
+run:
+\t@echo "=== Platform ${stageName} Stage ==="
+${stageScript}
+\t@echo "${stageName} completed successfully"
+"""
+    sh "make -f .platform-${stageName}.mk run"
+    sh "rm -f .platform-${stageName}.mk"
+}
+
 def call(Map config = [:]) {
     // Required parameters
     def gitUrl = config.gitUrl ?: error("gitUrl is required")
@@ -17,9 +30,6 @@ def call(Map config = [:]) {
     
     // Optional: Maven tool configuration
     def mavenTool = config.mavenTool ?: 'Maven'
-    
-    // Shared library workspace path
-    def sharedLibPath = "${env.WORKSPACE}@libs/jenkins-shared-library"
     
     pipeline {
         agent any
@@ -78,9 +88,19 @@ def call(Map config = [:]) {
             stage('Build') {
                 steps {
                     script {
-                        echo "=== Build Stage (Platform Mandatory) ==="
-                        // Use Makefile from shared library
-                        sh "make -f ${sharedLibPath}/stages/build/Makefile run"
+                        def buildScript = '''
+\t@echo "Building application..."
+\t@if [ -f "pom.xml" ]; then \\
+\t\tmvn clean compile; \\
+\telif [ -f "build.gradle" ]; then \\
+\t\t./gradlew clean build; \\
+\telif [ -f "package.json" ]; then \\
+\t\tnpm install && npm run build; \\
+\telse \\
+\t\techo "ERROR: No build file found (pom.xml, build.gradle, package.json)"; \\
+\t\texit 1; \\
+\tfi'''
+                        runPlatformStage('Build', buildScript)
                     }
                 }
             }
@@ -118,9 +138,19 @@ def call(Map config = [:]) {
             stage('Test') {
                 steps {
                     script {
-                        echo "=== Test Stage (Platform Mandatory) ==="
-                        // Use Makefile from shared library
-                        sh "make -f ${sharedLibPath}/stages/test/Makefile run"
+                        def testScript = '''
+\t@echo "Running tests..."
+\t@if [ -f "pom.xml" ]; then \\
+\t\tmvn test; \\
+\telif [ -f "build.gradle" ]; then \\
+\t\t./gradlew test; \\
+\telif [ -f "package.json" ]; then \\
+\t\tnpm test; \\
+\telse \\
+\t\techo "ERROR: No test configuration found"; \\
+\t\texit 1; \\
+\tfi'''
+                        runPlatformStage('Test', testScript)
                     }
                 }
             }
@@ -158,9 +188,19 @@ def call(Map config = [:]) {
             stage('Security Scan') {
                 steps {
                     script {
-                        echo "=== Security Scan Stage (Platform Mandatory) ==="
-                        // Use Makefile from shared library
-                        sh "make -f ${sharedLibPath}/stages/security/Makefile run"
+                        def securityScript = '''
+\t@echo "Running security scans..."
+\t@if [ -f "pom.xml" ]; then \\
+\t\tmvn dependency-check:check || echo "Warning: Security scan had issues"; \\
+\t\tmvn dependency:tree > dependency-tree.txt; \\
+\telif [ -f "build.gradle" ]; then \\
+\t\t./gradlew dependencyCheckAnalyze || echo "Warning: Security scan had issues"; \\
+\telif [ -f "package.json" ]; then \\
+\t\tnpm audit || echo "Warning: Security scan had issues"; \\
+\telse \\
+\t\techo "Warning: No security scan available for this project type"; \\
+\tfi'''
+                        runPlatformStage('Security', securityScript)
                     }
                 }
             }
@@ -198,9 +238,19 @@ def call(Map config = [:]) {
             stage('Package') {
                 steps {
                     script {
-                        echo "=== Package Stage (Platform Mandatory) ==="
-                        // Use Makefile from shared library
-                        sh "make -f ${sharedLibPath}/stages/package/Makefile run"
+                        def packageScript = '''
+\t@echo "Packaging application..."
+\t@if [ -f "pom.xml" ]; then \\
+\t\tmvn package -DskipTests; \\
+\telif [ -f "build.gradle" ]; then \\
+\t\t./gradlew assemble; \\
+\telif [ -f "package.json" ]; then \\
+\t\tnpm pack; \\
+\telse \\
+\t\techo "ERROR: No package configuration found"; \\
+\t\texit 1; \\
+\tfi'''
+                        runPlatformStage('Package', packageScript)
                     }
                 }
             }
