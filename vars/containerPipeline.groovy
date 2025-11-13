@@ -43,39 +43,36 @@ def runCustomStage(String stageName, Map stageConfig, String defaultImage, Strin
     def scriptFile = stageConfig.scriptFile
     def continueOnFailure = stageConfig.continueOnFailure ?: false
     
-    try {
-        if (scriptFile) {
-            // Run script file from app repo
-            docker.image(container).inside("-v ${cacheVolume}:/root/.m2") {
-                def exitCode = sh(script: "chmod +x ${scriptFile}", returnStatus: true)
-                if (exitCode != 0) {
-                    error("Failed to make ${scriptFile} executable")
-                }
-                
-                exitCode = sh(script: "./${scriptFile}", returnStatus: true)
-                if (exitCode != 0) {
+    if (scriptFile) {
+        // Run script file from app repo
+        docker.image(container).inside("-v ${cacheVolume}:/root/.m2") {
+            sh "chmod +x ${scriptFile}"
+            
+            def exitCode = sh(script: "./${scriptFile}", returnStatus: true)
+            if (exitCode != 0) {
+                if (continueOnFailure) {
+                    echo "WARNING: Custom stage '${stageName}' failed with exit code ${exitCode} (continueOnFailure=true)"
+                    currentBuild.result = 'UNSTABLE'
+                } else {
                     error("Custom stage '${stageName}' failed with exit code ${exitCode}")
                 }
             }
-        } else if (script) {
-            // Run inline script
-            docker.image(container).inside("-v ${cacheVolume}:/root/.m2") {
-                def exitCode = sh(script: script, returnStatus: true)
-                if (exitCode != 0) {
+        }
+    } else if (script) {
+        // Run inline script
+        docker.image(container).inside("-v ${cacheVolume}:/root/.m2") {
+            def exitCode = sh(script: script, returnStatus: true)
+            if (exitCode != 0) {
+                if (continueOnFailure) {
+                    echo "WARNING: Custom stage '${stageName}' failed with exit code ${exitCode} (continueOnFailure=true)"
+                    currentBuild.result = 'UNSTABLE'
+                } else {
                     error("Custom stage '${stageName}' failed with exit code ${exitCode}")
                 }
             }
-        } else {
-            echo "WARNING: Custom stage '${stageName}' has no script or scriptFile defined"
         }
-    } catch (Exception e) {
-        echo "ERROR: Custom stage '${stageName}' failed: ${e.message}"
-        if (continueOnFailure) {
-            echo "WARNING: Continuing pipeline despite failure (continueOnFailure=true)"
-            currentBuild.result = 'UNSTABLE'
-        } else {
-            error("Pipeline failed due to custom stage '${stageName}' failure")
-        }
+    } else {
+        echo "WARNING: Custom stage '${stageName}' has no script or scriptFile defined"
     }
 }
 
