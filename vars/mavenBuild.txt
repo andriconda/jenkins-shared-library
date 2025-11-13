@@ -1,0 +1,25 @@
+Maven Build Pipeline
+
+Reusable Maven build pipeline for Spring Boot and other Maven projects.
+
+Usage:
+------
+@Library('jenkins-shared-library') _
+
+mavenBuild(
+    gitUrl: 'https://github.com/your-org/your-repo.git',
+    gitBranch: 'main',
+    mavenGoals: 'clean package',
+    skipTests: true,
+    mavenTool: 'Maven',
+    cleanCache: true
+)
+
+Parameters:
+-----------
+- gitUrl: Git repository URL (required)
+- gitBranch: Git branch to checkout (default: 'main')
+- mavenGoals: Maven goals to execute (default: 'clean package')
+- skipTests: Skip tests during build (default: true)
+- mavenTool: Name of Maven tool in Jenkins (default: 'Maven')
+- cleanCache: Clean build artifacts and Maven cache before build (default: true)
