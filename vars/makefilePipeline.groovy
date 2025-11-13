@@ -10,16 +10,18 @@
  * App engineers control: before-build, after-build, etc. in app repo Makefile
  */
 
-// Helper to run platform stage
-def runPlatformStage(String stageName, String stageScript) {
-    writeFile file: ".platform-${stageName}.mk", text: """
-.PHONY: run
-run:
-\t@echo "=== Platform ${stageName} Stage ==="
-${stageScript}
-\t@echo "${stageName} completed successfully"
-"""
+// Helper to run platform stage from shared library Makefile
+def runPlatformStage(String stageName) {
+    // Load Makefile from shared library resources
+    def makefileContent = libraryResource "stages/${stageName.toLowerCase()}/Makefile"
+    
+    // Write to temporary file
+    writeFile file: ".platform-${stageName}.mk", text: makefileContent
+    
+    // Execute
     sh "make -f .platform-${stageName}.mk run"
+    
+    // Cleanup
     sh "rm -f .platform-${stageName}.mk"
 }
 
@@ -88,19 +90,8 @@ def call(Map config = [:]) {
             stage('Build') {
                 steps {
                     script {
-                        def buildScript = '''
-\t@echo "Building application..."
-\t@if [ -f "pom.xml" ]; then \\
-\t\tmvn clean compile; \\
-\telif [ -f "build.gradle" ]; then \\
-\t\t./gradlew clean build; \\
-\telif [ -f "package.json" ]; then \\
-\t\tnpm install && npm run build; \\
-\telse \\
-\t\techo "ERROR: No build file found (pom.xml, build.gradle, package.json)"; \\
-\t\texit 1; \\
-\tfi'''
-                        runPlatformStage('Build', buildScript)
+                        echo "=== Build Stage (Platform Mandatory) ==="
+                        runPlatformStage('Build')
                     }
                 }
             }
@@ -138,19 +129,8 @@ def call(Map config = [:]) {
             stage('Test') {
                 steps {
                     script {
-                        def testScript = '''
-\t@echo "Running tests..."
-\t@if [ -f "pom.xml" ]; then \\
-\t\tmvn test; \\
-\telif [ -f "build.gradle" ]; then \\
-\t\t./gradlew test; \\
-\telif [ -f "package.json" ]; then \\
-\t\tnpm test; \\
-\telse \\
-\t\techo "ERROR: No test configuration found"; \\
-\t\texit 1; \\
-\tfi'''
-                        runPlatformStage('Test', testScript)
+                        echo "=== Test Stage (Platform Mandatory) ==="
+                        runPlatformStage('Test')
                     }
                 }
             }
@@ -188,19 +168,8 @@ def call(Map config = [:]) {
             stage('Security Scan') {
                 steps {
                     script {
-                        def securityScript = '''
-\t@echo "Running security scans..."
-\t@if [ -f "pom.xml" ]; then \\
-\t\tmvn dependency-check:check || echo "Warning: Security scan had issues"; \\
-\t\tmvn dependency:tree > dependency-tree.txt; \\
-\telif [ -f "build.gradle" ]; then \\
-\t\t./gradlew dependencyCheckAnalyze || echo "Warning: Security scan had issues"; \\
-\telif [ -f "package.json" ]; then \\
-\t\tnpm audit || echo "Warning: Security scan had issues"; \\
-\telse \\
-\t\techo "Warning: No security scan available for this project type"; \\
-\tfi'''
-                        runPlatformStage('Security', securityScript)
+                        echo "=== Security Scan Stage (Platform Mandatory) ==="
+                        runPlatformStage('Security')
                     }
                 }
             }
@@ -238,19 +207,8 @@ def call(Map config = [:]) {
             stage('Package') {
                 steps {
                     script {
-                        def packageScript = '''
-\t@echo "Packaging application..."
-\t@if [ -f "pom.xml" ]; then \\
-\t\tmvn package -DskipTests; \\
-\telif [ -f "build.gradle" ]; then \\
-\t\t./gradlew assemble; \\
-\telif [ -f "package.json" ]; then \\
-\t\tnpm pack; \\
-\telse \\
-\t\techo "ERROR: No package configuration found"; \\
-\t\texit 1; \\
-\tfi'''
-                        runPlatformStage('Package', packageScript)
+                        echo "=== Package Stage (Platform Mandatory) ==="
+                        runPlatformStage('Package')
                     }
                 }
             }

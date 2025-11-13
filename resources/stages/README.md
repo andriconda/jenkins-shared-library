@@ -5,12 +5,14 @@ This directory contains Makefiles for mandatory pipeline stages.
 ## Structure
 
 ```
-stages/
+resources/stages/
 ├── build/Makefile      # Build stage
 ├── test/Makefile       # Test stage
 ├── security/Makefile   # Security scan stage
 └── package/Makefile    # Package stage
 ```
+
+These files are loaded via `libraryResource` in the pipeline.
 
 ## Purpose
 
@@ -52,7 +54,7 @@ Each stage Makefile supports multiple project types:
 ### Example: Update Build Stage
 
 ```bash
-cd jenkins-shared-library/stages/build
+cd jenkins-shared-library/resources/stages/build
 vi Makefile
 
 # Make your changes
@@ -99,10 +101,10 @@ git push origin main
 
 To add a new mandatory stage:
 
-1. Create new directory: `mkdir stages/newstage`
-2. Create Makefile: `touch stages/newstage/Makefile`
+1. Create new directory: `mkdir resources/stages/newstage`
+2. Create Makefile: `touch resources/stages/newstage/Makefile`
 3. Add `run` target with stage logic
-4. Update `vars/makefilePipeline.groovy` to call new stage
+4. Update `vars/makefilePipeline.groovy` to call new stage with `runPlatformStage('Newstage')`
 5. Document in this README
 
 ## Questions?

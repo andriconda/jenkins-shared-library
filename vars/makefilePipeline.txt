@@ -25,10 +25,10 @@ Mandatory Stages (Platform Controlled):
 These stages run from shared library Makefiles.
 App engineers CANNOT modify these.
 
-1. Build       - jenkins-shared-library/stages/build/Makefile
-2. Test        - jenkins-shared-library/stages/test/Makefile
-3. Security    - jenkins-shared-library/stages/security/Makefile
-4. Package     - jenkins-shared-library/stages/package/Makefile
+1. Build       - jenkins-shared-library/resources/stages/build/Makefile
+2. Test        - jenkins-shared-library/resources/stages/test/Makefile
+3. Security    - jenkins-shared-library/resources/stages/security/Makefile
+4. Package     - jenkins-shared-library/resources/stages/package/Makefile
 
 Optional Hooks (App Controlled):
 ---------------------------------
