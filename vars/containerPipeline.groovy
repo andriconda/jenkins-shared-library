@@ -41,20 +41,31 @@ def runCustomStage(String stageName, Map stageConfig, String defaultImage, Strin
     def container = stageConfig.container ?: defaultImage
     def script = stageConfig.script
     def scriptFile = stageConfig.scriptFile
+    def continueOnFailure = stageConfig.continueOnFailure ?: false
     
-    if (scriptFile) {
-        // Run script file from app repo
-        docker.image(container).inside("-v ${cacheVolume}:/root/.m2") {
-            sh "chmod +x ${scriptFile}"
-            sh "./${scriptFile}"
+    try {
+        if (scriptFile) {
+            // Run script file from app repo
+            docker.image(container).inside("-v ${cacheVolume}:/root/.m2") {
+                sh "chmod +x ${scriptFile}"
+                sh "./${scriptFile}"
+            }
+        } else if (script) {
+            // Run inline script
+            docker.image(container).inside("-v ${cacheVolume}:/root/.m2") {
+                sh script
+            }
+        } else {
+            echo "WARNING: Custom stage '${stageName}' has no script or scriptFile defined"
         }
-    } else if (script) {
-        // Run inline script
-        docker.image(container).inside("-v ${cacheVolume}:/root/.m2") {
-            sh script
+    } catch (Exception e) {
+        echo "ERROR: Custom stage '${stageName}' failed: ${e.message}"
+        if (continueOnFailure) {
+            echo "WARNING: Continuing pipeline despite failure (continueOnFailure=true)"
+            currentBuild.result = 'UNSTABLE'
+        } else {
+            throw e  // Re-throw to fail the pipeline
         }
-    } else {
-        echo "WARNING: Custom stage '${stageName}' has no script or scriptFile defined"
     }
 }
 
