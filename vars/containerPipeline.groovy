@@ -84,9 +84,11 @@ def createCustomStages(String afterStage, Map customStages, String defaultImage,
     def stages = [:]
     customStages.findAll { it.value.after == afterStage }.each { stageName, stageConfig ->
         stages[stageName] = {
-            stage(stageName) {
-                echo "=== Custom Stage: ${stageName} (App) ==="
-                runCustomStage(stageName, stageConfig, defaultImage, cacheVolume)
+            node {
+                stage(stageName) {
+                    echo "=== Custom Stage: ${stageName} (App) ==="
+                    runCustomStage(stageName, stageConfig, defaultImage, cacheVolume)
+                }
             }
         }
     }
@@ -155,7 +157,7 @@ def call(Map config = [:]) {
                 steps {
                     script {
                         def buildCustomStages = createCustomStages('build', customStages, PLATFORM_BUILD_IMAGE, mavenCache)
-                        parallel buildCustomStages
+                        parallel(failFast: true, buildCustomStages)
                     }
                 }
             }
@@ -176,7 +178,7 @@ def call(Map config = [:]) {
                 steps {
                     script {
                         def testCustomStages = createCustomStages('test', customStages, PLATFORM_TEST_IMAGE, mavenCache)
-                        parallel testCustomStages
+                        parallel(failFast: true, testCustomStages)
                     }
                 }
             }
@@ -197,7 +199,7 @@ def call(Map config = [:]) {
                 steps {
                     script {
                         def securityCustomStages = createCustomStages('security', customStages, PLATFORM_SECURITY_IMAGE, mavenCache)
-                        parallel securityCustomStages
+                        parallel(failFast: true, securityCustomStages)
                     }
                 }
             }
@@ -218,26 +220,7 @@ def call(Map config = [:]) {
                 steps {
                     script {
                         def packageCustomStages = createCustomStages('package', customStages, PLATFORM_PACKAGE_IMAGE, mavenCache)
-                        parallel packageCustomStages
-                    }
-                }
-            }
-            
-            stage('Docker Build') {
-                when {
-                    expression { fileExists('Dockerfile') }
-                }
-                steps {
-                    script {
-                        echo "=== Docker Build Stage ==="
-                        docker.image(PLATFORM_DOCKER_IMAGE).inside("-v /var/run/docker.sock:/var/run/docker.sock") {
-                            sh '''
-                                echo "Building Docker image..."
-                                docker build -t ${JOB_NAME}:${BUILD_NUMBER} .
-                                docker tag ${JOB_NAME}:${BUILD_NUMBER} ${JOB_NAME}:latest
-                                echo "Docker image built: ${JOB_NAME}:${BUILD_NUMBER}"
-                            '''
-                        }
+                        parallel(failFast: true, packageCustomStages)
                     }
                 }
             }
