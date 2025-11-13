@@ -60,15 +60,10 @@ def runCustomStage(String stageName, Map stageConfig, String defaultImage, Strin
 
 // Helper to execute custom stages after a specific stage
 def executeCustomStages(String afterStage, Map customStages, String defaultImage, String cacheVolume) {
-    customStages.findAll { it.value.after == afterStage }.each { stageName, stageConfig ->
-        stage(stageName) {
-            steps {
-                script {
-                    echo "=== Custom Stage: ${stageName} (App) ==="
-                    runCustomStage(stageName, stageConfig, defaultImage, cacheVolume)
-                }
-            }
-        }
+    def stagesToRun = customStages.findAll { it.value.after == afterStage }
+    stagesToRun.each { stageName, stageConfig ->
+        echo "=== Custom Stage: ${stageName} (App) ==="
+        runCustomStage(stageName, stageConfig, defaultImage, cacheVolume)
     }
 }
 
