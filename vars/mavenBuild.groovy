@@ -54,14 +54,19 @@ def call(Map config = [:]) {
             stage('Pre-Build Hook') {
                 when {
                     expression { 
-                        fileExists('Makefile') && 
-                        sh(script: 'make -n pre-build 2>/dev/null', returnStatus: true) == 0 
+                        return fileExists('Makefile')
                     }
                 }
                 steps {
                     script {
-                        echo "Running pre-build hook from Makefile"
-                        sh 'make pre-build'
+                        echo "Checking for pre-build target in Makefile"
+                        def result = sh(script: 'make -n pre-build 2>/dev/null', returnStatus: true)
+                        if (result == 0) {
+                            echo "Running pre-build hook from Makefile"
+                            sh 'make pre-build'
+                        } else {
+                            echo "No pre-build target found in Makefile, skipping"
+                        }
                     }
                 }
             }
@@ -84,14 +89,19 @@ def call(Map config = [:]) {
             stage('Post-Build Hook') {
                 when {
                     expression { 
-                        fileExists('Makefile') && 
-                        sh(script: 'make -n post-build 2>/dev/null', returnStatus: true) == 0 
+                        return fileExists('Makefile')
                     }
                 }
                 steps {
                     script {
-                        echo "Running post-build hook from Makefile"
-                        sh 'make post-build'
+                        echo "Checking for post-build target in Makefile"
+                        def result = sh(script: 'make -n post-build 2>/dev/null', returnStatus: true)
+                        if (result == 0) {
+                            echo "Running post-build hook from Makefile"
+                            sh 'make post-build'
+                        } else {
+                            echo "No post-build target found in Makefile, skipping"
+                        }
                     }
                 }
             }
