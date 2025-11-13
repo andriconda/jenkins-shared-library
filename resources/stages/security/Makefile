@@ -22,6 +22,4 @@ run:
 	else \
 		echo "Warning: No security scan available for this project type"; \
 	fi
-	@echo "checing aws cli version"
-	@aws --version
 	@echo "Security scan completed"
