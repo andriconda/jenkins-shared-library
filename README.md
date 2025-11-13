@@ -57,38 +57,50 @@ mavenBuild(
 
 ## Custom Stages via Makefile
 
-Projects can inject custom stages into the pipeline by creating a `Makefile` with specific targets:
+Projects can inject custom stages into the pipeline by creating a `Makefile` with hook targets that run before and after each pipeline stage.
 
-### Pre-Build Hook
+### Available Hooks
 
-Runs before Maven build:
+The pipeline supports hooks before and after every stage:
+
+| Hook | When It Runs |
+|------|-------------|
+| `before-checkout` | Before git checkout |
+| `after-checkout` | After git checkout |
+| `before-clean` | Before cache cleaning |
+| `after-clean` | After cache cleaning |
+| `before-build` | Before Maven build |
+| `after-build` | After Maven build |
+| `before-archive` | Before artifact archiving |
+| `after-archive` | After artifact archiving |
+
+### Example Makefile
 
 ```makefile
-.PHONY: pre-build
+.PHONY: before-build after-build
 
-pre-build:
-	@echo "Running validation..."
+before-build:
+	@echo "Validating environment..."
 	@java -version
 	@mvn -version
-```
 
-### Post-Build Hook
-
-Runs after Maven build:
-
-```makefile
-.PHONY: post-build
-
-post-build:
-	@echo "Running additional tests..."
+after-build:
+	@echo "Running tests and security scans..."
 	@make test
 	@make security-scan
+
+test:
+	@mvn test
+
+security-scan:
+	@mvn dependency:tree
 ```
 
 ### Benefits
 
 - **Standardized**: All projects use the same Makefile interface
 - **Flexible**: Each project defines its own custom logic
+- **Granular Control**: Hook into any stage (before or after)
 - **Optional**: Hooks only run if targets exist
 - **No Jenkinsfile changes**: Customize without modifying pipeline code
 

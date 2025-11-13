@@ -27,17 +27,21 @@ Parameters:
 
 Custom Stages via Makefile:
 ----------------------------
-The pipeline automatically detects and runs Makefile targets:
-- pre-build: Runs before Maven build
-- post-build: Runs after Maven build
+The pipeline automatically detects and runs Makefile hook targets before and after each stage:
+
+Available Hooks:
+- before-checkout / after-checkout
+- before-clean / after-clean
+- before-build / after-build
+- before-archive / after-archive
 
 Example Makefile:
-.PHONY: pre-build post-build
+.PHONY: before-build after-build
 
-pre-build:
-	@echo "Running pre-build tasks..."
-	@make lint
+before-build:
+	@echo "Validating environment..."
+	@java -version
 
-post-build:
-	@echo "Running post-build tasks..."
+after-build:
+	@echo "Running tests..."
 	@make test
