@@ -104,16 +104,15 @@ def call(Map config = [:]) {
                         echo "=== Container-Based Pipeline Setup ==="
                         echo "All stages run in containers - no tools needed on Jenkins!"
                         
+                        // Clean workspace to avoid stale git state
+                        cleanWs()
+                        
                         // Checkout application code
                         echo "Checking out ${gitBranch} from ${gitUrl}"
                         checkout([
                             $class: 'GitSCM',
                             branches: [[name: "*/${gitBranch}"]],
-                            userRemoteConfigs: [[url: gitUrl]],
-                            extensions: [
-                                [$class: 'CleanBeforeCheckout'],
-                                [$class: 'CloneOption', depth: 1, noTags: false, shallow: true]
-                            ]
+                            userRemoteConfigs: [[url: gitUrl]]
                         ])
                     }
                 }
