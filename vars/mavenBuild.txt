@@ -1,6 +1,7 @@
 Maven Build Pipeline
 
 Reusable Maven build pipeline for Spring Boot and other Maven projects.
+Supports custom stage injection via Makefile hooks.
 
 Usage:
 ------
@@ -23,3 +24,20 @@ Parameters:
 - skipTests: Skip tests during build (default: true)
 - mavenTool: Name of Maven tool in Jenkins (default: 'Maven')
 - cleanCache: Clean build artifacts and Maven cache before build (default: true)
+
+Custom Stages via Makefile:
+----------------------------
+The pipeline automatically detects and runs Makefile targets:
+- pre-build: Runs before Maven build
+- post-build: Runs after Maven build
+
+Example Makefile:
+.PHONY: pre-build post-build
+
+pre-build:
+	@echo "Running pre-build tasks..."
+	@make lint
+
+post-build:
+	@echo "Running post-build tasks..."
+	@make test

@@ -7,6 +7,7 @@ def call(Map config = [:]) {
     def skipTests = config.skipTests ?: true
     def mavenTool = config.mavenTool ?: 'Maven'
     def cleanCache = config.cleanCache ?: true
+    def customStages = config.customStages ?: [:] // Map of stage name to make target
     
     pipeline {
         agent any
@@ -50,6 +51,21 @@ def call(Map config = [:]) {
                 }
             }
             
+            stage('Pre-Build Hook') {
+                when {
+                    expression { 
+                        fileExists('Makefile') && 
+                        sh(script: 'make -n pre-build 2>/dev/null', returnStatus: true) == 0 
+                    }
+                }
+                steps {
+                    script {
+                        echo "Running pre-build hook from Makefile"
+                        sh 'make pre-build'
+                    }
+                }
+            }
+            
             stage('Build') {
                 steps {
                     script {
@@ -61,6 +77,21 @@ def call(Map config = [:]) {
                         
                         echo "Executing: ${mvnCommand}"
                         sh mvnCommand
+                    }
+                }
+            }
+            
+            stage('Post-Build Hook') {
+                when {
+                    expression { 
+                        fileExists('Makefile') && 
+                        sh(script: 'make -n post-build 2>/dev/null', returnStatus: true) == 0 
+                    }
+                }
+                steps {
+                    script {
+                        echo "Running post-build hook from Makefile"
+                        sh 'make post-build'
                     }
                 }
             }
