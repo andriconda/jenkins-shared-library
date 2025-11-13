@@ -59,9 +59,25 @@ def call(Map config = [:]) {
                 }
                 steps {
                     script {
+                        // Check if make is available
+                        def makeAvailable = sh(
+                            script: 'command -v make >/dev/null 2>&1',
+                            returnStatus: true
+                        ) == 0
+                        
+                        if (!makeAvailable) {
+                            echo "WARNING: 'make' command not found. Please install make in Jenkins or use Docker agent."
+                            echo "Skipping pre-build hook"
+                            return
+                        }
+                        
                         echo "Checking for pre-build target in Makefile"
-                        def result = sh(script: 'make -n pre-build 2>/dev/null', returnStatus: true)
-                        if (result == 0) {
+                        def hasTarget = sh(
+                            script: 'grep -q "^pre-build:" Makefile',
+                            returnStatus: true
+                        ) == 0
+                        
+                        if (hasTarget) {
                             echo "Running pre-build hook from Makefile"
                             sh 'make pre-build'
                         } else {
@@ -94,9 +110,25 @@ def call(Map config = [:]) {
                 }
                 steps {
                     script {
+                        // Check if make is available
+                        def makeAvailable = sh(
+                            script: 'command -v make >/dev/null 2>&1',
+                            returnStatus: true
+                        ) == 0
+                        
+                        if (!makeAvailable) {
+                            echo "WARNING: 'make' command not found. Please install make in Jenkins or use Docker agent."
+                            echo "Skipping post-build hook"
+                            return
+                        }
+                        
                         echo "Checking for post-build target in Makefile"
-                        def result = sh(script: 'make -n post-build 2>/dev/null', returnStatus: true)
-                        if (result == 0) {
+                        def hasTarget = sh(
+                            script: 'grep -q "^post-build:" Makefile',
+                            returnStatus: true
+                        ) == 0
+                        
+                        if (hasTarget) {
                             echo "Running post-build hook from Makefile"
                             sh 'make post-build'
                         } else {
