@@ -47,13 +47,23 @@ def runCustomStage(String stageName, Map stageConfig, String defaultImage, Strin
         if (scriptFile) {
             // Run script file from app repo
             docker.image(container).inside("-v ${cacheVolume}:/root/.m2") {
-                sh "chmod +x ${scriptFile}"
-                sh "./${scriptFile}"
+                def exitCode = sh(script: "chmod +x ${scriptFile}", returnStatus: true)
+                if (exitCode != 0) {
+                    error("Failed to make ${scriptFile} executable")
+                }
+                
+                exitCode = sh(script: "./${scriptFile}", returnStatus: true)
+                if (exitCode != 0) {
+                    error("Custom stage '${stageName}' failed with exit code ${exitCode}")
+                }
             }
         } else if (script) {
             // Run inline script
             docker.image(container).inside("-v ${cacheVolume}:/root/.m2") {
-                sh script
+                def exitCode = sh(script: script, returnStatus: true)
+                if (exitCode != 0) {
+                    error("Custom stage '${stageName}' failed with exit code ${exitCode}")
+                }
             }
         } else {
             echo "WARNING: Custom stage '${stageName}' has no script or scriptFile defined"
@@ -64,18 +74,23 @@ def runCustomStage(String stageName, Map stageConfig, String defaultImage, Strin
             echo "WARNING: Continuing pipeline despite failure (continueOnFailure=true)"
             currentBuild.result = 'UNSTABLE'
         } else {
-            throw e  // Re-throw to fail the pipeline
+            error("Pipeline failed due to custom stage '${stageName}' failure")
         }
     }
 }
 
-// Helper to execute custom stages after a specific stage
-def executeCustomStages(String afterStage, Map customStages, String defaultImage, String cacheVolume) {
-    def stagesToRun = customStages.findAll { it.value.after == afterStage }
-    stagesToRun.each { stageName, stageConfig ->
-        echo "=== Custom Stage: ${stageName} (App) ==="
-        runCustomStage(stageName, stageConfig, defaultImage, cacheVolume)
+// Helper to create custom stages dynamically
+def createCustomStages(String afterStage, Map customStages, String defaultImage, String cacheVolume) {
+    def stages = [:]
+    customStages.findAll { it.value.after == afterStage }.each { stageName, stageConfig ->
+        stages[stageName] = {
+            stage(stageName) {
+                echo "=== Custom Stage: ${stageName} (App) ==="
+                runCustomStage(stageName, stageConfig, defaultImage, cacheVolume)
+            }
+        }
     }
+    return stages
 }
 
 def call(Map config = [:]) {
@@ -129,9 +144,18 @@ def call(Map config = [:]) {
                     script {
                         echo "=== Build Stage (Platform Mandatory) ==="
                         runPlatformStage('Build', PLATFORM_BUILD_IMAGE, mavenCache)
-                        
-                        // Execute custom stages after Build (runtime decision)
-                        executeCustomStages('build', customStages, PLATFORM_BUILD_IMAGE, mavenCache)
+                    }
+                }
+            }
+            
+            stage('Custom: After Build') {
+                when {
+                    expression { customStages.any { it.value.after == 'build' } }
+                }
+                steps {
+                    script {
+                        def buildCustomStages = createCustomStages('build', customStages, PLATFORM_BUILD_IMAGE, mavenCache)
+                        parallel buildCustomStages
                     }
                 }
             }
@@ -141,9 +165,18 @@ def call(Map config = [:]) {
                     script {
                         echo "=== Test Stage (Platform Mandatory) ==="
                         runPlatformStage('Test', PLATFORM_TEST_IMAGE, mavenCache)
-                        
-                        // Execute custom stages after Test (runtime decision)
-                        executeCustomStages('test', customStages, PLATFORM_TEST_IMAGE, mavenCache)
+                    }
+                }
+            }
+            
+            stage('Custom: After Test') {
+                when {
+                    expression { customStages.any { it.value.after == 'test' } }
+                }
+                steps {
+                    script {
+                        def testCustomStages = createCustomStages('test', customStages, PLATFORM_TEST_IMAGE, mavenCache)
+                        parallel testCustomStages
                     }
                 }
             }
@@ -153,9 +186,18 @@ def call(Map config = [:]) {
                     script {
                         echo "=== Security Scan Stage (Platform Mandatory) ==="
                         runPlatformStage('Security', PLATFORM_SECURITY_IMAGE, mavenCache)
-                        
-                        // Execute custom stages after Security (runtime decision)
-                        executeCustomStages('security', customStages, PLATFORM_SECURITY_IMAGE, mavenCache)
+                    }
+                }
+            }
+            
+            stage('Custom: After Security') {
+                when {
+                    expression { customStages.any { it.value.after == 'security' } }
+                }
+                steps {
+                    script {
+                        def securityCustomStages = createCustomStages('security', customStages, PLATFORM_SECURITY_IMAGE, mavenCache)
+                        parallel securityCustomStages
                     }
                 }
             }
@@ -165,9 +207,18 @@ def call(Map config = [:]) {
                     script {
                         echo "=== Package Stage (Platform Mandatory) ==="
                         runPlatformStage('Package', PLATFORM_PACKAGE_IMAGE, mavenCache)
-                        
-                        // Execute custom stages after Package (runtime decision)
-                        executeCustomStages('package', customStages, PLATFORM_PACKAGE_IMAGE, mavenCache)
+                    }
+                }
+            }
+            
+            stage('Custom: After Package') {
+                when {
+                    expression { customStages.any { it.value.after == 'package' } }
+                }
+                steps {
+                    script {
+                        def packageCustomStages = createCustomStages('package', customStages, PLATFORM_PACKAGE_IMAGE, mavenCache)
+                        parallel packageCustomStages
                     }
                 }
             }
